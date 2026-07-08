@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fitr"
+version = "0.1.0"
+description = "Analysis-by-synthesis model fitting for phase-folded light curves: planet / eclipsing binary / blend / starspot"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Nikhil Cherry" }]
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "batman-package",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+fitr = "fitr.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/nikhilcherry/fitr"
+
+[tool.setuptools.packages.find]
+include = ["fitr*"]
