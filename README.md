@@ -9,6 +9,8 @@ Just Classify"), the sibling tool to
 [`foldr`](https://github.com/nikhilcherry/foldr) (period search) and
 [`batchr`](https://github.com/nikhilcherry/batchr) (bulk processing).
 
+![Four forward models fit to four synthetic light curves — planet, eb, blend, and starspot](assets/model_gallery.png)
+
 ## Install
 
 ```bash
@@ -82,7 +84,10 @@ batchr run manifest.csv --tool fitr          # bulk-run fitr over many curves
   alone** — the real discriminator is a centroid offset, which fitr never
   sees. When their BIC scores are within `ΔBIC < 2`, fitr reports
   `"ambiguous"` with an explicit centroid-vetting note rather than
-  silently picking a winner.
+  silently picking a winner:
+
+  ![A deep, grazing eclipse diluted down to planet-like depth: planet and blend fits overlap almost exactly, and fitr reports "ambiguous" instead of guessing](assets/degenerate_blend_planet.png)
+
 - All fitting is derivative-free (`scipy.optimize.least_squares`,
   numeric Jacobian) with 5 seeded starts (1 heuristic + 4 random,
   `numpy.random.default_rng(42)`); results are exactly reproducible
