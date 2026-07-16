@@ -95,7 +95,7 @@ def test_cli_fit_ambiguous_exit_3(tmp_path, monkeypatch):
     sc = make_planet_curve()
     path = _write_npz(tmp_path, sc)
 
-    def fake_compare(results, phase, flux, flux_err):
+    def fake_compare(results, phase, flux, flux_err, odd_even=None):
         return Comparison(
             results=results,
             baseline_chi2=1000.0,

@@ -15,6 +15,7 @@ from .fold import maybe_autobin
 from .io import FitrInputError, load_lightcurve
 from .models import ALL_MODELS
 from .report import to_json, to_text
+from .vetting import odd_even_test
 
 EXIT_CLEAR = 0
 EXIT_USAGE_ERROR = 2
@@ -100,7 +101,8 @@ def _cmd_fit(args: argparse.Namespace) -> int:
 
     phase = fold_phase(lc.time, period, epoch)
     phase, flux, flux_err = maybe_autobin(phase, lc.flux, lc.flux_err)
-    comparison = compare(results, phase, flux, flux_err)
+    odd_even = odd_even_test(lc.time, lc.flux, lc.flux_err, period, epoch)
+    comparison = compare(results, phase, flux, flux_err, odd_even=odd_even)
 
     if args.json_output:
         print(to_json(comparison))

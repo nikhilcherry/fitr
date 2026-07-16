@@ -78,8 +78,6 @@ batchr run manifest.csv --tool fitr          # bulk-run fitr over many curves
   derivative-free LD fitting on a single band would be slow and poorly
   constrained anyway.
 - Orbits are circular (`ecc=0` fixed) for `planet` and `blend`.
-- `eb` has no odd-even depth test; that needs unfolded data at 2× the
-  period. Future work.
 - **`blend` vs `planet` is often genuinely degenerate from photometry
   alone** — the real discriminator is a centroid offset, which fitr never
   sees. When their BIC scores are within `ΔBIC < 2`, fitr reports
@@ -93,6 +91,28 @@ batchr run manifest.csv --tool fitr          # bulk-run fitr over many curves
   `numpy.random.default_rng(42)`); results are exactly reproducible
   run-to-run.
 
+## Odd-even depth test
+
+An eclipsing binary whose primary and secondary eclipses have similar
+depth can fold convincingly at *half* its true period, showing up as a
+single-depth "planet" transit — the classic false positive that raw
+model-fitting alone cannot catch, since both halves of the fold look
+alike. `fitr` independently measures the mean in-transit depth of
+odd-numbered and even-numbered cycles at full time resolution (not from
+the phase-folded/binned data the model fits use), and flags a mismatch
+whenever the two depths disagree by more than 3σ:
+
+```
+odd-even depth test: MISMATCH (odd=0.030102±0.000224, even=0.010081±0.000224, 63.5σ)
+```
+
+This runs for every fit regardless of which model wins — a mismatch is
+just as meaningful for a "clear" planet verdict as for an ambiguous one,
+since period-doubled EBs are exactly the false positive most likely to
+win as "planet". It needs at least 5 in-transit points on each side of
+the parity split; short/sparse baselines report `"available": false`
+with an explanatory note instead of guessing.
+
 ## JSON output schema
 
 ```jsonc
@@ -102,6 +122,17 @@ batchr run manifest.csv --tool fitr          # bulk-run fitr over many curves
   "tied_models": ["planet"],       // models within ΔBIC < 2 of the best (ambiguous case)
   "baseline_chi2": 3948.5,         // chi2 of a 1-parameter flat-flux fit
   "baseline_bic": 3954.49,
+  "odd_even": {                    // odd/even transit depth vetting check (see above)
+    "available": true,
+    "depth_odd": 0.010102,
+    "depth_even": 0.009998,
+    "depth_odd_err": 0.000224,
+    "depth_even_err": 0.000224,
+    "n_in_transit_odd": 42,
+    "n_in_transit_even": 41,
+    "significance_sigma": 0.33,
+    "mismatch": false
+  },
   "models": [
     {
       "model": "planet",

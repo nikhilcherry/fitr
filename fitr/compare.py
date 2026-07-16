@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from .fit import FitResult
+from .vetting import OddEvenResult
 
 AMBIGUOUS_DELTA_BIC = 2.0
 NO_SIGNAL_DELTA_BIC = 10.0
@@ -22,6 +23,7 @@ class Comparison:
     verdict: str  # "clear" | "ambiguous" | "no_significant_signal"
     tied_models: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    odd_even: OddEvenResult | None = None
 
 
 def _flat_baseline_chi2(flux: np.ndarray, flux_err: np.ndarray) -> float:
@@ -31,7 +33,11 @@ def _flat_baseline_chi2(flux: np.ndarray, flux_err: np.ndarray) -> float:
 
 
 def compare(
-    results: list[FitResult], phase: np.ndarray, flux: np.ndarray, flux_err: np.ndarray
+    results: list[FitResult],
+    phase: np.ndarray,
+    flux: np.ndarray,
+    flux_err: np.ndarray,
+    odd_even: OddEvenResult | None = None,
 ) -> Comparison:
     """Rank fitted models by BIC and decide a verdict.
 
@@ -41,10 +47,16 @@ def compare(
     - "ambiguous" if the best two (or more) models are within ΔBIC < 2.
       planet/blend ties get an explicit centroid-vetting caveat.
     - "clear" otherwise.
+
+    `odd_even`, if given, contributes its own note whenever it flags a
+    mismatch — regardless of verdict, since a period-doubled eclipsing
+    binary can just as easily win as a "clear" planet as show up ambiguous.
     """
     n_points = len(flux)
     baseline_chi2 = _flat_baseline_chi2(flux, flux_err)
     baseline_bic = baseline_chi2 + 1.0 * np.log(n_points)
+
+    odd_even_notes = [odd_even.note] if odd_even is not None and odd_even.mismatch else []
 
     sorted_results = sorted(results, key=lambda r: r.bic)
     finite_results = [r for r in sorted_results if np.isfinite(r.bic)]
@@ -58,7 +70,8 @@ def compare(
             winner=None,
             verdict="no_significant_signal",
             tied_models=[],
-            notes=["all model fits failed to converge"],
+            notes=["all model fits failed to converge", *odd_even_notes],
+            odd_even=odd_even,
         )
 
     best = finite_results[0]
@@ -78,8 +91,10 @@ def compare(
             tied_models=[],
             notes=[
                 f"no model improves on a flat baseline by more than "
-                f"ΔBIC > {NO_SIGNAL_DELTA_BIC:.0f}"
+                f"ΔBIC > {NO_SIGNAL_DELTA_BIC:.0f}",
+                *odd_even_notes,
             ],
+            odd_even=odd_even,
         )
 
     tied_models = [
@@ -94,6 +109,7 @@ def compare(
                 "(photometry alone cannot distinguish a diluted eclipsing "
                 "binary from a genuine planet)"
             )
+        notes.extend(odd_even_notes)
         return Comparison(
             results=sorted_results,
             baseline_chi2=baseline_chi2,
@@ -103,6 +119,7 @@ def compare(
             verdict="ambiguous",
             tied_models=tied_models,
             notes=notes,
+            odd_even=odd_even,
         )
 
     return Comparison(
@@ -113,5 +130,6 @@ def compare(
         winner=best.model_name,
         verdict="clear",
         tied_models=[best.model_name],
-        notes=[],
+        notes=odd_even_notes,
+        odd_even=odd_even,
     )

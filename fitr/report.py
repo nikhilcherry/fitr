@@ -22,6 +22,24 @@ def _round_dict(d: dict) -> dict:
     return {k: _round_sig(v) for k, v in d.items()}
 
 
+def _odd_even_json(odd_even) -> dict | None:
+    if odd_even is None:
+        return None
+    if not odd_even.available:
+        return {"available": False, "note": odd_even.note}
+    return {
+        "available": True,
+        "depth_odd": _round_sig(odd_even.depth_odd),
+        "depth_even": _round_sig(odd_even.depth_even),
+        "depth_odd_err": _round_sig(odd_even.depth_odd_err),
+        "depth_even_err": _round_sig(odd_even.depth_even_err),
+        "n_in_transit_odd": odd_even.n_in_transit_odd,
+        "n_in_transit_even": odd_even.n_in_transit_even,
+        "significance_sigma": _round_sig(odd_even.significance_sigma),
+        "mismatch": odd_even.mismatch,
+    }
+
+
 def to_json(comparison: Comparison) -> str:
     payload = {
         "verdict": comparison.verdict,
@@ -29,6 +47,7 @@ def to_json(comparison: Comparison) -> str:
         "tied_models": comparison.tied_models,
         "baseline_chi2": _round_sig(comparison.baseline_chi2),
         "baseline_bic": _round_sig(comparison.baseline_bic),
+        "odd_even": _odd_even_json(comparison.odd_even),
         "models": [
             {
                 "model": r.model_name,
@@ -73,5 +92,15 @@ def to_text(comparison: Comparison) -> str:
 
     for note in comparison.notes:
         lines.append(f"note: {note}")
+
+    odd_even = comparison.odd_even
+    if odd_even is not None and odd_even.available:
+        status = "MISMATCH" if odd_even.mismatch else "consistent"
+        lines.append(
+            f"odd-even depth test: {status} "
+            f"(odd={odd_even.depth_odd:.6f}±{odd_even.depth_odd_err:.6f}, "
+            f"even={odd_even.depth_even:.6f}±{odd_even.depth_even_err:.6f}, "
+            f"{odd_even.significance_sigma:.1f}σ)"
+        )
 
     return "\n".join(lines)

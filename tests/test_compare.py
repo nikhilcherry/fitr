@@ -4,6 +4,7 @@ import numpy as np
 
 from fitr.compare import compare
 from fitr.fit import FitResult
+from fitr.vetting import OddEvenResult
 
 
 def _result(name, bic, chi2=None, n_params=3, n_points=1000, converged=True):
@@ -72,6 +73,35 @@ def test_no_significant_signal_when_baseline_wins():
     comparison = compare(results, phase, flux, flux_err)
     assert comparison.verdict == "no_significant_signal"
     assert comparison.winner is None
+
+
+def test_odd_even_mismatch_note_propagates_on_clear_winner():
+    results = [_result("planet", 100.0), _result("eb", 150.0), _result("blend", 120.0), _result("starspot", 500.0)]
+    phase, flux, flux_err = _flat_data()
+    odd_even = OddEvenResult(
+        available=True,
+        depth_odd=0.03,
+        depth_even=0.01,
+        depth_odd_err=0.001,
+        depth_even_err=0.001,
+        n_in_transit_odd=20,
+        n_in_transit_even=20,
+        significance_sigma=14.1,
+        mismatch=True,
+        note="odd-even depth mismatch (14.1σ): odd and even transits have significantly different depths",
+    )
+    comparison = compare(results, phase, flux, flux_err, odd_even=odd_even)
+    if comparison.verdict == "clear":
+        assert any("odd-even" in note for note in comparison.notes)
+    assert comparison.odd_even is odd_even
+
+
+def test_odd_even_consistent_result_adds_no_note():
+    results = [_result("planet", 100.0), _result("eb", 150.0), _result("blend", 120.0), _result("starspot", 500.0)]
+    phase, flux, flux_err = _flat_data()
+    odd_even = OddEvenResult(available=True, mismatch=False, significance_sigma=0.5)
+    comparison = compare(results, phase, flux, flux_err, odd_even=odd_even)
+    assert not any("odd-even" in note for note in comparison.notes)
 
 
 def test_all_failed_fits_yields_no_significant_signal():
