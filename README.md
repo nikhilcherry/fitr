@@ -63,6 +63,14 @@ fitr fit lightcurve.npz --period 3.14        # classify by model fit
 batchr run manifest.csv --tool fitr          # bulk-run fitr over many curves
 ```
 
+```mermaid
+flowchart LR
+    F["foldr\n(period search)"] -->|"period, epoch"| T["fitr\n(model-fit classification)"]:::here
+    T -->|"verdict per target"| B["batchr\n(bulk-run across many curves)"]
+    I["injectr\n(synthetic injections)"] -.->|"ground-truth test cases"| T
+    classDef here fill:#2563eb,color:#fff,stroke:none;
+```
+
 ## The four models
 
 | model | params | what it captures |
