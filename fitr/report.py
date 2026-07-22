@@ -94,13 +94,16 @@ def to_text(comparison: Comparison) -> str:
         lines.append(f"note: {note}")
 
     odd_even = comparison.odd_even
-    if odd_even is not None and odd_even.available:
-        status = "MISMATCH" if odd_even.mismatch else "consistent"
-        lines.append(
-            f"odd-even depth test: {status} "
-            f"(odd={odd_even.depth_odd:.6f}±{odd_even.depth_odd_err:.6f}, "
-            f"even={odd_even.depth_even:.6f}±{odd_even.depth_even_err:.6f}, "
-            f"{odd_even.significance_sigma:.1f}σ)"
-        )
+    if odd_even is not None:
+        if odd_even.available:
+            status = "MISMATCH" if odd_even.mismatch else "consistent"
+            lines.append(
+                f"odd-even depth test: {status} "
+                f"(odd={odd_even.depth_odd:.6f}±{odd_even.depth_odd_err:.6f}, "
+                f"even={odd_even.depth_even:.6f}±{odd_even.depth_even_err:.6f}, "
+                f"{odd_even.significance_sigma:.1f}σ)"
+            )
+        else:
+            lines.append(f"odd-even depth test: unavailable ({odd_even.note})")
 
     return "\n".join(lines)
