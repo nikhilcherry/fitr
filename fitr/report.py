@@ -9,9 +9,15 @@ import math
 from .compare import Comparison
 
 
-def _round_sig(x: float, sig: int = 6) -> float:
-    if x is None or not math.isfinite(x):
-        return x
+def _round_sig(x: float, sig: int = 6) -> float | None:
+    if x is None:
+        return None
+    if not math.isfinite(x):
+        # e.g. bic/aic/delta_bic are literally float('inf') for a model
+        # that failed to converge -- json.dumps would otherwise emit a
+        # bare Infinity/NaN token, which isn't valid JSON (RFC 8259) and
+        # breaks strict parsers consuming this "public output contract".
+        return None
     if x == 0:
         return 0.0
     digits = sig - int(math.floor(math.log10(abs(x)))) - 1
@@ -65,7 +71,7 @@ def to_json(comparison: Comparison) -> str:
         ],
         "notes": comparison.notes,
     }
-    return json.dumps(payload, indent=2)
+    return json.dumps(payload, indent=2, allow_nan=False)
 
 
 def to_text(comparison: Comparison) -> str:

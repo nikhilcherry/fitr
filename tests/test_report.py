@@ -93,3 +93,25 @@ def test_to_text_flags_mismatch():
     comparison = _clear_comparison(odd_even=odd_even)
     text = to_text(comparison)
     assert "odd-even depth test: MISMATCH" in text
+
+
+def test_to_json_emits_null_not_infinity_for_a_failed_model_fit():
+    # A model that never converged (fit_model's total-failure path) reports
+    # bic/aic/chi2 as float('inf'); json.dumps' default bare Infinity/NaN
+    # tokens aren't valid JSON (RFC 8259) and would break strict parsers
+    # consuming this "public output contract".
+    failed = _result("starspot", bic=float("inf"), chi2=float("inf"), converged=False)
+    ok = _result("planet", bic=60.0, chi2=50.0)
+    phase, flux, flux_err = _flat_data()
+    comparison = compare([ok, failed], phase, flux, flux_err)
+
+    text = to_json(comparison)
+    assert "Infinity" not in text
+    assert "NaN" not in text
+
+    payload = json.loads(text)
+    starspot = next(m for m in payload["models"] if m["model"] == "starspot")
+    assert starspot["bic"] is None
+    assert starspot["aic"] is None
+    assert starspot["chi2"] is None
+    assert starspot["delta_bic"] is None
