@@ -88,5 +88,10 @@ class EBModel(Model):
         flux = np.ones_like(phase)
         flux -= _trapezoid(phase, t0_shift, dur1, d1)
         flux -= _trapezoid(phase, 0.5 + t0_shift, dur2, d2)
-        flux += amp_ellip * np.cos(4.0 * np.pi * phase)
+        # Ellipsoidal variation: real tidally-distorted binaries dim at the
+        # conjunctions (phase 0, 0.5 -- smallest projected stellar area)
+        # and brighten at quadrature (phase 0.25, 0.75 -- largest projected
+        # area). cos(4*pi*phase) is +1 at phase 0/0.5 and -1 at 0.25/0.75,
+        # so it must be subtracted (not added) to dip at conjunction.
+        flux -= amp_ellip * np.cos(4.0 * np.pi * phase)
         return flux

@@ -1,5 +1,11 @@
 # fitr
 
+<p align="center">
+  <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-blue">
+  <img alt="pipeline" src="https://img.shields.io/badge/Arvyo_BAH2026-analysis--by--synthesis-8b5cf6">
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
+</p>
+
 `fitr` fits four competing physical forward models — **planet**,
 **eclipsing binary (eb)**, **blend**, and **starspot** — to a phase-folded
 light curve, and reports which model explains the data best. The

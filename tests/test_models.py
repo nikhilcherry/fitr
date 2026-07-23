@@ -59,3 +59,24 @@ def test_eb_secondary_never_deeper_than_primary():
     primary_depth = 1.0 - flux[np.argmin(np.abs(phase))]
     secondary_depth = 1.0 - flux[np.argmin(np.abs(phase - 0.5))]
     assert secondary_depth <= primary_depth + 1e-9
+
+
+def test_eb_ellipsoidal_variation_dips_at_conjunction_peaks_at_quadrature():
+    """Real tidally-distorted binaries are faintest at the conjunctions
+    (phase 0, 0.5 -- smallest projected stellar area) and brightest at
+    quadrature (phase 0.25, 0.75 -- largest projected area); see e.g. the
+    OGLE ellipsoidal-variable atlas. With the eclipses themselves switched
+    off (d1=d2=0), only the ellipsoidal term should remain."""
+    from fitr.models.eb import EBModel
+
+    model = EBModel()
+    phase = np.array([0.0, 0.25, 0.5, 0.75])
+    params = np.array([1e-5, 0.0, 0.05, 0.05, 0.03, 0.0])
+    flux = model.evaluate(phase, params, period=3.0)
+
+    assert flux[0] < 1.0  # conjunction: dip
+    assert flux[2] < 1.0  # conjunction: dip
+    assert flux[1] > 1.0  # quadrature: brighten
+    assert flux[3] > 1.0  # quadrature: brighten
+    assert flux[1] > flux[0]
+    assert flux[3] > flux[2]
