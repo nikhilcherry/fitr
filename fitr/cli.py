@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+from pathlib import Path
 
 from . import __version__
 from .compare import compare
@@ -93,6 +94,9 @@ def _cmd_fit(args: argparse.Namespace) -> int:
     if period is None:
         print("no period available — run foldr first to find one.", file=sys.stderr)
         return EXIT_USAGE_ERROR
+    if period <= 0:
+        print(f"Error: period must be positive, got {period}", file=sys.stderr)
+        return EXIT_USAGE_ERROR
     if epoch is None:
         epoch = float(lc.time[0])
         print(f"Note: no epoch given, defaulting to first timestamp {epoch}", file=sys.stderr)
@@ -110,7 +114,9 @@ def _cmd_fit(args: argparse.Namespace) -> int:
         print(to_text(comparison))
 
     if args.out:
-        with open(args.out, "w") as f:
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w") as f:
             f.write(to_json(comparison))
 
     return _VERDICT_EXIT_CODES.get(comparison.verdict, EXIT_USAGE_ERROR)

@@ -88,6 +88,41 @@ def test_cli_fit_bad_file_exit_2(tmp_path):
     assert result.returncode == 2
 
 
+def test_cli_fit_rejects_zero_period(tmp_path):
+    # period=0 divides by zero in fold(), silently turning every phase into
+    # NaN/inf and producing a bogus-but-successful (exit 0) fit instead of
+    # a clear usage error.
+    sc = make_planet_curve()
+    path = _write_npz(tmp_path, sc)
+
+    result = _run_cli("fit", str(path), "--period", "0", "--epoch", str(sc.epoch))
+    assert result.returncode == 2
+    assert "period must be positive" in result.stderr
+
+
+def test_cli_fit_rejects_negative_period(tmp_path):
+    sc = make_planet_curve()
+    path = _write_npz(tmp_path, sc)
+
+    result = _run_cli("fit", str(path), "--period", "-3.0", "--epoch", str(sc.epoch))
+    assert result.returncode == 2
+    assert "period must be positive" in result.stderr
+
+
+def test_cli_fit_out_creates_missing_parent_directories(tmp_path):
+    sc = make_planet_curve()
+    path = _write_npz(tmp_path, sc)
+    out_path = tmp_path / "nested" / "does" / "not" / "exist" / "report.json"
+
+    result = _run_cli(
+        "fit", str(path), "--period", str(sc.period), "--epoch", str(sc.epoch),
+        "--out", str(out_path),
+    )
+    assert result.returncode == 0
+    assert out_path.exists()
+    json.loads(out_path.read_text())  # written report is valid JSON
+
+
 def test_cli_fit_ambiguous_exit_3(tmp_path, monkeypatch):
     import fitr.cli as cli_module
     from fitr.compare import Comparison
