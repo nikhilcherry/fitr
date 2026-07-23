@@ -22,10 +22,10 @@ def coarse_bin(
 
 
 def estimate_depth_and_duration(
-    phase: np.ndarray, flux: np.ndarray
+    phase: np.ndarray, flux: np.ndarray, n_bins: int = 50
 ) -> tuple[float, float, float]:
     """Rough (depth, duration_phase, phase_of_minimum) from a coarse binned curve."""
-    centers, means = coarse_bin(phase, flux)
+    centers, means = coarse_bin(phase, flux, n_bins=n_bins)
     if len(means) == 0:
         return 0.01, 0.05, 0.0
 
@@ -34,9 +34,14 @@ def estimate_depth_and_duration(
     depth = max(baseline - means[min_idx], 1e-6)
     t0_est = centers[min_idx]
 
+    # Fixed bin width from the (always evenly spaced) edge grid, not from
+    # adjacent *populated* bin centers -- centers[1] - centers[0] silently
+    # overestimates the spacing (and thus the duration) whenever a bin
+    # between them is empty and gets dropped by coarse_bin.
+    bin_width = 1.0 / n_bins
     half_depth = baseline - 0.5 * depth
     below = means < half_depth
-    duration = np.sum(below) * (centers[1] - centers[0]) if len(centers) > 1 else 0.05
+    duration = np.sum(below) * bin_width
     duration = max(duration, 0.005)
 
     return float(depth), float(duration), float(t0_est)
