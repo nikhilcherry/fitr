@@ -20,6 +20,14 @@ def test_fit_all_rejects_non_positive_period_directly(planet_curve):
             fit_all(planet_curve.lc, bad_period, planet_curve.epoch)
 
 
+def test_fit_all_rejects_nan_period(planet_curve):
+    # period <= 0 does NOT catch NaN (NaN compares False to both > 0 and
+    # <= 0), so a naive "if period <= 0" guard silently lets a NaN period
+    # through to the exact same confidently-wrong-verdict bug.
+    with pytest.raises(ValueError, match="period must be positive"):
+        fit_all(planet_curve.lc, float("nan"), planet_curve.epoch)
+
+
 def test_planet_recovery_and_param_tolerance(planet_curve):
     results = fit_all(planet_curve.lc, planet_curve.period, planet_curve.epoch)
     best = min(results, key=lambda r: r.bic)
