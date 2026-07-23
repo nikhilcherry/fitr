@@ -128,6 +128,15 @@ def fit_all(lc: LightCurve, period: float, epoch: float) -> list[FitResult]:
     from .fold import fold, maybe_autobin
     from .models import ALL_MODELS
 
+    if period <= 0:
+        # fold() divides by period; period<=0 silently turns every phase
+        # into NaN/inf, and the flat-phase degenerate case that follows
+        # can spuriously produce a *lower* chi2 than a real fit would --
+        # a confidently wrong "clear winner" instead of a usage error.
+        # This validation lives here (not just in cli.py) because fit_all
+        # is the public library entry point too.
+        raise ValueError(f"period must be positive, got {period}")
+
     phase = fold(lc.time, period, epoch)
     phase, flux, flux_err = maybe_autobin(phase, lc.flux, lc.flux_err)
 

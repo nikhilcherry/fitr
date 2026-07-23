@@ -1,10 +1,23 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from fitr.fit import fit_all, fit_model
 from fitr.fold import fold, maybe_autobin
 from fitr.models import ALL_MODELS
+
+
+def test_fit_all_rejects_non_positive_period_directly(planet_curve):
+    # fold() divides by period; period<=0 silently turns every phase into
+    # NaN/inf, and the degenerate flat-phase fit that follows can
+    # spuriously report a LOWER chi2 than a genuine fit -- a confidently
+    # wrong "clear winner" verdict instead of a usage error. This must be
+    # caught in fit_all() itself (the public library entry point), not
+    # just in cli.py, since fitr is used as a library, not only via CLI.
+    for bad_period in (0, -3.0):
+        with pytest.raises(ValueError, match="period must be positive"):
+            fit_all(planet_curve.lc, bad_period, planet_curve.epoch)
 
 
 def test_planet_recovery_and_param_tolerance(planet_curve):
